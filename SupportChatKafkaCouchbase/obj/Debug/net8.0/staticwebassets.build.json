@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "WsZd/fElvcZadVJrpc3r2rsCPo2xLWm4qbn7pbcnNsg=",
+  "Source": "SupportChatKafkaCouchbase",
+  "BasePath": "_content/SupportChatKafkaCouchbase",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

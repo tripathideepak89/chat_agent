@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: supportchat
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: supportchat
+  template:
+    metadata:
+      labels:
+        app: supportchat
+    spec:
+      containers:
+        - name: supportchat
+          image: youracr.azurecr.io/supportchat:1.0.0
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: supportchat-config
+            - secretRef:
+                name: supportchat-secrets
+          readinessProbe:
+            httpGet:
+              path: /swagger/index.html
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /swagger/index.html
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"

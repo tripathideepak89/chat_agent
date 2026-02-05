@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: supportchat-config
+data:
+  ASPNETCORE_ENVIRONMENT: "Production"
+  Kafka__BootstrapServers: "kafka:9092"
+  Kafka__PrimaryTopic: "chat.sessions.primary"
+  Kafka__OverflowTopic: "chat.sessions.overflow"
+  Kafka__ConsumerGroup: "chat-router"
+  Couchbase__ConnectionString: "couchbase://couchbase"
+  Couchbase__Bucket: "support"
+  Couchbase__Scope: "_default"
+  Couchbase__Collection: "_default"
+  ChatRouting__TimeZoneId: "UTC"
+  ChatRouting__OfficeHoursStart: "09:00:00"
+  ChatRouting__OfficeHoursEnd: "17:00:00"
+  ChatRouting__MaxMissedPolls: "3"
+  ChatRouting__ExpectedPollIntervalSeconds: "1"
+  ChatRouting__LockTtlSeconds: "10"
+  ChatRouting__AssignmentTickMs: "150"
+  ChatRouting__InactivityScanMs: "800"
