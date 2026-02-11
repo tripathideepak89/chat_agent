@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support Chat System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎧 Support Chat System</h1>
+            <nav>
+                <button class="nav-btn active" data-view="customer">Customer</button>
+                <button class="nav-btn" data-view="admin">Admin Dashboard</button>
+            </nav>
+        </header>
+
+        <!-- Customer View -->
+        <div id="customer-view" class="view active">
+            <div class="card">
+                <h2>Request Support</h2>
+                <div id="chat-form">
+                    <div class="form-group">
+                        <label for="customerRef">Customer Reference (optional)</label>
+                        <input type="text" id="customerRef" placeholder="e.g., customer123" />
+                    </div>
+                    <button id="startChatBtn" class="btn btn-primary">Start Chat Session</button>
+                </div>
+
+                <div id="chat-status" class="hidden">
+                    <div class="status-header">
+                        <h3>Chat Session Status</h3>
+                        <span class="session-id"></span>
+                    </div>
+                    
+                    <div class="status-indicator">
+                        <div class="spinner"></div>
+                        <p class="status-text">Connecting you to an agent...</p>
+                    </div>
+
+                    <div class="status-details">
+                        <div class="detail-item">
+                            <span class="label">Queue:</span>
+                            <span class="value queue-value">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="label">Status:</span>
+                            <span class="value status-value">Waiting</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="label">Poll Count:</span>
+                            <span class="value poll-count">0</span>
+                        </div>
+                    </div>
+
+                    <div id="assignment-info" class="hidden success-message">
+                        <h4>✓ Connected to Agent!</h4>
+                        <div class="agent-details">
+                            <p><strong>Agent ID:</strong> <span id="agentId"></span></p>
+                            <p><strong>Team:</strong> <span id="agentTeam"></span></p>
+                        </div>
+                    </div>
+
+                    <div id="inactive-info" class="hidden warning-message">
+                        <h4>⚠ Session Inactive</h4>
+                        <p>This session is no longer active.</p>
+                    </div>
+
+                    <button id="cancelChatBtn" class="btn btn-secondary">Cancel Session</button>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <h3>📋 How It Works</h3>
+                <ol>
+                    <li>Click "Start Chat Session" to join the queue</li>
+                    <li>Our system will automatically assign you to an available agent</li>
+                    <li>Agents are selected based on seniority and availability</li>
+                    <li>You'll be notified once connected</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- Admin View -->
+        <div id="admin-view" class="view">
+            <div class="card">
+                <h2>System Dashboard</h2>
+                <button id="refreshDashboard" class="btn btn-secondary">🔄 Refresh</button>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalSessions">-</div>
+                        <div class="stat-label">Total Sessions</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="activeSessions">-</div>
+                        <div class="stat-label">Active Sessions</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="queuedSessions">-</div>
+                        <div class="stat-label">In Queue</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="assignedSessions">-</div>
+                        <div class="stat-label">Assigned</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <h3>Recent Sessions</h3>
+                    <div id="sessionsTable" class="loading">Loading sessions...</div>
+                </div>
+
+                <div class="table-container">
+                    <h3>Agent Status</h3>
+                    <div id="agentsTable" class="loading">Loading agents...</div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Support Chat System v1.0 | Built with .NET 8, Kafka & Couchbase</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -59,6 +59,9 @@ public sealed class AssignmentWorker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        // Delay startup to allow HTTP server to bind first
+        await Task.Delay(TimeSpan.FromSeconds(3), stoppingToken);
+        
         using var consumer = _consumerFactory.Create();
         consumer.Subscribe(new[] { _kafka.PrimaryTopic, _kafka.OverflowTopic });
 

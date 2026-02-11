@@ -71,7 +71,7 @@ public sealed class AgentRepository
             SELECT d.*
             FROM `support`._default._default AS d
             WHERE META(d).id LIKE 'agent::%'
-              AND d.Team = $team
+              AND d.team = $team
         ";
 
         var queryOptions = new QueryOptions();

@@ -67,3 +67,4 @@ C:\Users\dtrid8\development\chat_agent\SupportChatKafkaCouchbase\obj\Debug\net8.
 C:\Users\dtrid8\development\chat_agent\SupportChatKafkaCouchbase\obj\Debug\net8.0\SupportChatKafkaCouchbase.pdb
 C:\Users\dtrid8\development\chat_agent\SupportChatKafkaCouchbase\obj\Debug\net8.0\SupportChatKafkaCouchbase.genruntimeconfig.cache
 C:\Users\dtrid8\development\chat_agent\SupportChatKafkaCouchbase\obj\Debug\net8.0\ref\SupportChatKafkaCouchbase.dll
+C:\Users\dtrid8\development\chat_agent\SupportChatKafkaCouchbase\obj\Debug\net8.0\SupportChatKafkaCouchbase.sourcelink.json

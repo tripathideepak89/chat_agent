@@ -7,8 +7,32 @@ using SupportChatKafkaCouchbase.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure host with longer startup timeout
+builder.Host.UseDefaultServiceProvider(options =>
+{
+    options.ValidateScopes = false;
+    options.ValidateOnBuild = false;
+});
+
+builder.Services.Configure<HostOptions>(options =>
+{
+    options.StartupTimeout = TimeSpan.FromMinutes(5);
+});
+
 builder.Services.AddEndpointsApiExplorer();
+
 builder.Services.AddSwaggerGen();
+
+// Add CORS for UI
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
 var kafkaOpts = new KafkaOptions(
     BootstrapServers: builder.Configuration["Kafka:BootstrapServers"]!,
@@ -67,11 +91,30 @@ builder.Services.AddHostedService<InactivityWorker>();
 
 var app = builder.Build();
 
+// Enable CORS
+app.UseCors();
+
+// Serve static files from wwwroot
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.UseSwagger();
 app.UseSwaggerUI();
 
 // Seed agents into Couchbase (idempotent upserts)
-await SeedAgentsAsync(app.Services.GetRequiredService<AgentRepository>());
+// Moved to background to avoid blocking startup
+_ = Task.Run(async () =>
+{
+    await Task.Delay(2000); // Give app time to start
+    try
+    {
+        await SeedAgentsAsync(app.Services.GetRequiredService<AgentRepository>());
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error seeding agents: {ex.Message}");
+    }
+});
 
 app.MapPost("/api/chat/sessions", async (
     CreateSessionRequest req,
