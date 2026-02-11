@@ -148,6 +148,87 @@ kubectl apply -f k8s/
 - **Distributed Locking**: CAS-based concurrency control
 - **Scalability**: Kafka partitioning for horizontal scaling
 
+## Business Rules
+
+### Queue Management
+
+#### Queue Capacity
+- **Primary Queue**: Team capacity × 1.5 (rounded down)
+- **Overflow Queue**: Overflow team capacity × 1.5 (rounded down)
+- Sessions are **rejected** when:
+  - Primary queue is full AND outside office hours
+  - Primary queue is full AND overflow queue is also full
+
+#### Team Capacity Calculation
+Each agent's capacity = `10 concurrent chats × efficiency multiplier`
+
+**Seniority Multipliers:**
+- Junior: 0.4 (4 concurrent chats)
+- Mid-Level: 0.6 (6 concurrent chats)
+- Senior: 0.8 (8 concurrent chats)
+- Team Lead: 0.5 (5 concurrent chats)
+
+**Example:** Team with 2 mid-levels and 1 junior:
+```
+Capacity = (2 × 10 × 0.6) + (1 × 10 × 0.4) = 16 concurrent chats
+Max Queue = 16 × 1.5 = 24 sessions
+```
+
+### Team Configuration
+
+**Team A (Primary Support)**
+- 1× Team Lead (capacity: 5)
+- 2× Mid-Level (capacity: 6 each)
+- 1× Junior (capacity: 4)
+- **Total Capacity:** 21 concurrent chats
+- **Max Queue:** 31 sessions
+
+**Team B (Primary Support)**
+- 1× Senior (capacity: 8)
+- 1× Mid-Level (capacity: 6)
+- 2× Junior (capacity: 4 each)
+- **Total Capacity:** 22 concurrent chats
+- **Max Queue:** 33 sessions
+
+**Team C (Night Shift)**
+- 2× Mid-Level (capacity: 6 each)
+- **Total Capacity:** 12 concurrent chats
+- **Max Queue:** 18 sessions
+
+**Overflow Team (Office Hours Only)**
+- 6× Junior equivalent (capacity: 4 each)
+- **Total Capacity:** 24 concurrent chats
+- **Max Queue:** 36 sessions
+
+### Chat Assignment Logic
+
+#### Round-Robin with Seniority Priority
+Chats are assigned in round-robin fashion, **preferring junior agents first**, then mid-level, then senior, then team lead.
+
+**Rationale:** Keep higher seniority agents available to assist lower seniority agents.
+
+**Example 1:** Team with 1 Senior (cap 8) + 1 Junior (cap 4)
+- 5 chats arrive → 4 assigned to Junior, 1 to Senior
+
+**Example 2:** Team with 2 Juniors + 1 Mid-Level
+- 6 chats arrive → 3 to each Junior, 0 to Mid-Level
+
+#### Shift Management
+- Agents work **8-hour shifts** (3 shifts per day)
+- When shift ends, agent:
+  - ✅ **Finishes** current active chats
+  - ❌ **Does NOT** receive new assignments
+
+#### Inactivity Detection
+- Client must poll `GET /api/chat/sessions/{id}/poll` every 1-2 seconds
+- Session marked **INACTIVE** after missing **3 consecutive polls**
+- Monitor checks every 800ms (configurable)
+
+### Office Hours & Overflow
+- **Office Hours:** 09:00 - 17:00 UTC (configurable)
+- **During Office Hours:** Overflow team activates when primary queue is full
+- **Outside Office Hours:** Sessions rejected when primary queue is full (no overflow)
+
 ## Build Status
 
 ✅ Build succeeded with 5 warnings (nullable reference warnings only)

@@ -119,26 +119,77 @@ _ = Task.Run(async () =>
 app.MapPost("/api/chat/sessions", async (
     CreateSessionRequest req,
     SessionRepository sessions,
+    AgentRepository agents,
     IKafkaProducer producer,
     KafkaOptions kafka,
     ChatRoutingSettings s,
     IClock clock,
     CancellationToken ct) =>
 {
+    var nowLocal = ConvertToLocal(clock.UtcNow, s.TimeZoneId).TimeOfDay;
+    var isOfficeHours = nowLocal >= s.OfficeHoursStart && nowLocal < s.OfficeHoursEnd;
+
+    // Determine current team based on time of day
+    var currentTeam = DetermineCurrentTeam(nowLocal);
+
+    // Check primary queue capacity
+    var primaryQueuedCount = await sessions.CountQueuedAsync("Primary", ct);
+    var teamCapacity = await agents.GetTeamCapacityAsync(currentTeam, ct);
+    var maxPrimaryQueue = (int)Math.Floor(teamCapacity * 1.5);
+
+    string queueHint = "Primary";
+    bool accepted = true;
+    string message = "OK";
+
+    // If primary queue is full, try overflow or refuse
+    if (primaryQueuedCount >= maxPrimaryQueue)
+    {
+        if (isOfficeHours)
+        {
+            // Try overflow queue
+            var overflowQueuedCount = await sessions.CountQueuedAsync("Overflow", ct);
+            var overflowCapacity = await agents.GetTeamCapacityAsync("Overflow", ct);
+            var maxOverflowQueue = (int)Math.Floor(overflowCapacity * 1.5);
+
+            if (overflowQueuedCount < maxOverflowQueue)
+            {
+                queueHint = "Overflow";
+                message = "Routed to overflow team";
+            }
+            else
+            {
+                // Both queues full - refuse
+                accepted = false;
+                message = "All queues are full. Please try again later.";
+            }
+        }
+        else
+        {
+            // Outside office hours, no overflow available - refuse
+            accepted = false;
+            message = "Queue is full. Support is available during office hours (09:00-17:00 UTC).";
+        }
+    }
+
+    if (!accepted)
+    {
+        return Results.Ok(new CreateSessionResponse(
+            Accepted: false,
+            SessionId: Guid.Empty,
+            Queue: null,
+            Message: message
+        ));
+    }
+
+    // Create and queue the session
     var session = new ChatSession
     {
         Id = Guid.NewGuid(),
         CreatedAtUtc = clock.UtcNow,
-        CustomerReference = string.IsNullOrWhiteSpace(req.CustomerReference) ? null : req.CustomerReference
+        CustomerReference = string.IsNullOrWhiteSpace(req.CustomerReference) ? null : req.CustomerReference,
+        QueueHint = queueHint,
+        Status = queueHint == "Overflow" ? ChatSessionStatus.QueuedOverflow : ChatSessionStatus.QueuedPrimary
     };
-
-    var nowLocal = ConvertToLocal(clock.UtcNow, s.TimeZoneId).TimeOfDay;
-
-    var isOfficeHours = nowLocal >= s.OfficeHoursStart && nowLocal < s.OfficeHoursEnd;
-    var queueHint = ChooseQueueHint(nowLocal, isOfficeHours);
-
-    session.QueueHint = queueHint;
-    session.Status = queueHint == "Overflow" ? ChatSessionStatus.QueuedOverflow : ChatSessionStatus.QueuedPrimary;
 
     await sessions.CreateAsync(session, ct);
 
@@ -153,7 +204,7 @@ app.MapPost("/api/chat/sessions", async (
         Accepted: true,
         SessionId: session.Id,
         Queue: queueHint,
-        Message: "OK"
+        Message: message
     ));
 });
 
@@ -259,16 +310,11 @@ static DateTimeOffset ConvertToLocal(DateTimeOffset utc, string tzId)
     return TimeZoneInfo.ConvertTime(utc, tz);
 }
 
-static string ChooseQueueHint(TimeSpan nowLocal, bool officeHours)
+static string DetermineCurrentTeam(TimeSpan nowLocal)
 {
-    // We keep the same notion:
-    // - Primary always
-    // - Overflow only during office hours
-    // This code chooses primary by default; if you want “queue full => overflow”
-    // you’d compute capacity & queue length (requires counters). For Kafka-based,
-    // common approach is: always produce primary; overflow is for special conditions.
-    // For the assignment requirement, we keep: office hours => overflow allowed.
-    return officeHours ? "Primary" : "Primary";
+    if (nowLocal >= TimeSpan.FromHours(0) && nowLocal < TimeSpan.FromHours(8)) return "TeamC";
+    if (nowLocal >= TimeSpan.FromHours(8) && nowLocal < TimeSpan.FromHours(16)) return "TeamA";
+    return "TeamB";
 }
 
 static async Task SeedAgentsAsync(AgentRepository repo)

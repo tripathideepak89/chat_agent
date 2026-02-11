@@ -149,4 +149,10 @@ public sealed class AgentRepository
 
         return false;
     }
+
+    public async Task<int> GetTeamCapacityAsync(string team, CancellationToken ct)
+    {
+        var agents = await GetTeamAgentsAsync(team, ct);
+        return agents.Sum(a => Capacity.AgentCapacity(a));
+    }
 }

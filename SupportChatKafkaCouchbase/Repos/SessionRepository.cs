@@ -1,6 +1,7 @@
 using Couchbase.Core.Exceptions;
 using Couchbase.Core.Exceptions.KeyValue;
 using Couchbase.KeyValue;
+using Couchbase.Query;
 using SupportChatKafkaCouchbase.Domain;
 using SupportChatKafkaCouchbase.Infra;
 
@@ -9,8 +10,13 @@ namespace SupportChatKafkaCouchbase.Repos;
 public sealed class SessionRepository
 {
     private readonly ICouchbaseCollection _col;
+    private readonly CouchbaseContext _ctx;
 
-    public SessionRepository(CouchbaseContext ctx) => _col = ctx.Collection;
+    public SessionRepository(CouchbaseContext ctx)
+    {
+        _col = ctx.Collection;
+        _ctx = ctx;
+    }
 
     public async Task CreateAsync(ChatSession session, CancellationToken ct)
     {
@@ -153,5 +159,29 @@ public sealed class SessionRepository
         }
 
         return false;
+    }
+
+    public async Task<int> CountQueuedAsync(string queueHint, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        var status = queueHint == "Overflow"
+            ? ChatSessionStatus.QueuedOverflow
+            : ChatSessionStatus.QueuedPrimary;
+
+        var stmt = @"
+            SELECT COUNT(*) AS cnt
+            FROM `support`._default._default AS d
+            WHERE META(d).id LIKE 'session::%'
+              AND d.Status = $status
+        ";
+
+        var queryOptions = new QueryOptions();
+        queryOptions.Parameter("status", status.ToString());
+
+        var result = await _ctx.Cluster.QueryAsync<Dictionary<string, long>>(stmt, queryOptions);
+        var rows = await result.Rows.ToListAsync(ct);
+
+        return rows.Count > 0 ? (int)rows[0]["cnt"] : 0;
     }
 }
