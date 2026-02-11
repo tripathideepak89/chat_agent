@@ -262,7 +262,8 @@ function renderAgentsTable(agents) {
             <tbody>
                 ${agents.map(a => {
                     const capacity = getAgentCapacity(a);
-                    const utilization = capacity > 0 ? Math.round((a.activeChats / capacity) * 100) : 0;
+                    const activeChats = a.activeSessionIds ? a.activeSessionIds.length : 0;
+                    const utilization = capacity > 0 ? Math.round((activeChats / capacity) * 100) : 0;
                     const isOnShift = isAgentOnShift(a);
                     return `
                         <tr>
@@ -270,7 +271,7 @@ function renderAgentsTable(agents) {
                             <td>${a.team}</td>
                             <td>${getSeniorityName(a.seniority)}</td>
                             <td style="font-size: 0.875rem;">${formatShift(a.shiftStart, a.shiftEnd)}</td>
-                            <td>${a.activeChats}</td>
+                            <td>${activeChats}</td>
                             <td>${capacity}</td>
                             <td>
                                 ${isOnShift 
