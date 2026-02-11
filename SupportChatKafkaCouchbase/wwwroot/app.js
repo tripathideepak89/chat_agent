@@ -166,48 +166,126 @@ document.getElementById('refreshDashboard').addEventListener('click', loadDashbo
 
 async function loadDashboardData() {
     try {
-        // Note: These endpoints would need to be created in the backend
-        // For now, we'll show placeholder data
+        // Load statistics
+        const statsResponse = await fetch(`${API_BASE}/stats`);
+        if (statsResponse.ok) {
+            const stats = await statsResponse.json();
+            document.getElementById('totalSessions').textContent = stats.totalSessions;
+            document.getElementById('activeSessions').textContent = stats.activeSessions;
+            document.getElementById('queuedSessions').textContent = stats.queuedSessions;
+            document.getElementById('assignedSessions').textContent = stats.assignedSessions;
+        }
         
-        // Simulate loading
-        document.getElementById('sessionsTable').innerHTML = '<div class="loading">Loading sessions...</div>';
-        document.getElementById('agentsTable').innerHTML = '<div class="loading">Loading agents...</div>';
+        // Load sessions
+        const sessionsResponse = await fetch(`${API_BASE}/sessions`);
+        if (sessionsResponse.ok) {
+            const sessions = await sessionsResponse.json();
+            renderSessionsTable(sessions);
+        } else {
+            document.getElementById('sessionsTable').innerHTML = '<div class="loading">Failed to load sessions</div>';
+        }
         
-        // Since we don't have these endpoints yet, show a message
-        setTimeout(() => {
-            document.getElementById('totalSessions').textContent = 'N/A';
-            document.getElementById('activeSessions').textContent = 'N/A';
-            document.getElementById('queuedSessions').textContent = 'N/A';
-            document.getElementById('assignedSessions').textContent = 'N/A';
-            
-            document.getElementById('sessionsTable').innerHTML = `
-                <div style="padding: 2rem; text-align: center; color: var(--text-secondary);">
-                    <p>📊 Dashboard endpoints not yet implemented</p>
-                    <p style="margin-top: 0.5rem; font-size: 0.875rem;">To enable the dashboard, add the following endpoints to the backend:</p>
-                    <ul style="list-style: none; margin-top: 1rem; font-family: monospace; font-size: 0.875rem;">
-                        <li>GET /api/chat/sessions (list all sessions)</li>
-                        <li>GET /api/chat/agents (list all agents)</li>
-                        <li>GET /api/chat/stats (get statistics)</li>
-                    </ul>
-                </div>
-            `;
-            
-            document.getElementById('agentsTable').innerHTML = `
-                <div style="padding: 2rem; text-align: center; color: var(--text-secondary);">
-                    <p>Use Couchbase Query Console at <a href="http://localhost:8093" target="_blank" style="color: var(--primary-color);">http://localhost:8093</a> to query agent data</p>
-                    <p style="margin-top: 0.5rem; font-size: 0.875rem;">Example query:</p>
-                    <code style="display: block; margin-top: 0.5rem; padding: 1rem; background: var(--bg-color); border-radius: 6px;">
-                        SELECT d.* FROM \`support\`._default._default d<br>
-                        WHERE META(d).id LIKE 'agent::%'
-                    </code>
-                </div>
-            `;
-        }, 500);
+        // Load agents
+        const agentsResponse = await fetch(`${API_BASE}/agents`);
+        if (agentsResponse.ok) {
+            const agents = await agentsResponse.json();
+            renderAgentsTable(agents);
+        } else {
+            document.getElementById('agentsTable').innerHTML = '<div class="loading">Failed to load agents</div>';
+        }
         
     } catch (error) {
         console.error('Error loading dashboard:', error);
         showError('Failed to load dashboard data');
     }
+}
+
+function renderSessionsTable(sessions) {
+    if (sessions.length === 0) {
+        document.getElementById('sessionsTable').innerHTML = '<div class="loading">No sessions found</div>';
+        return;
+    }
+    
+    const table = `
+        <table>
+            <thead>
+                <tr>
+                    <th>Session ID</th>
+                    <th>Customer Ref</th>
+                    <th>Status</th>
+                    <th>Queue</th>
+                    <th>Agent</th>
+                    <th>Team</th>
+                    <th>Polls</th>
+                    <th>Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${sessions.map(s => `
+                    <tr>
+                        <td style="font-family: monospace; font-size: 0.875rem;">${s.id.substring(0, 8)}...</td>
+                        <td>${s.customerReference || '-'}</td>
+                        <td>${getStatusBadge(s.status)}</td>
+                        <td>${s.queueHint || '-'}</td>
+                        <td style="font-family: monospace; font-size: 0.875rem;">${s.assignedAgentId || '-'}</td>
+                        <td>${s.assignedTeam || '-'}</td>
+                        <td>${s.pollCount}</td>
+                        <td style="font-size: 0.875rem;">${formatDateTime(s.createdAtUtc)}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+    
+    document.getElementById('sessionsTable').innerHTML = table;
+}
+
+function renderAgentsTable(agents) {
+    if (agents.length === 0) {
+        document.getElementById('agentsTable').innerHTML = '<div class="loading">No agents found</div>';
+        return;
+    }
+    
+    const table = `
+        <table>
+            <thead>
+                <tr>
+                    <th>Agent ID</th>
+                    <th>Team</th>
+                    <th>Seniority</th>
+                    <th>Shift</th>
+                    <th>Active Chats</th>
+                    <th>Capacity</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${agents.map(a => {
+                    const capacity = getAgentCapacity(a);
+                    const utilization = capacity > 0 ? Math.round((a.activeChats / capacity) * 100) : 0;
+                    const isOnShift = isAgentOnShift(a);
+                    return `
+                        <tr>
+                            <td style="font-family: monospace;">${a.id}</td>
+                            <td>${a.team}</td>
+                            <td>${getSeniorityName(a.seniority)}</td>
+                            <td style="font-size: 0.875rem;">${formatShift(a.shiftStart, a.shiftEnd)}</td>
+                            <td>${a.activeChats}</td>
+                            <td>${capacity}</td>
+                            <td>
+                                ${isOnShift 
+                                    ? `<span class="status-badge status-assigned">On Shift (${utilization}%)</span>`
+                                    : `<span class="status-badge status-inactive">Off Shift</span>`
+                                }
+                            </td>
+                        </tr>
+                    `;
+                }).join('')}
+            </tbody>
+        </table>
+    `;
+    
+    document.getElementById('agentsTable').innerHTML = table;
 }
 
 function showError(message) {
@@ -231,6 +309,60 @@ function getStatusBadge(status) {
         5: '<span class="status-badge status-inactive">Refused</span>'
     };
     return badges[status] || `<span class="status-badge">${status}</span>`;
+}
+
+function getSeniorityName(seniority) {
+    const names = {
+        0: 'Junior',
+        1: 'Mid-Level',
+        2: 'Senior',
+        3: 'Team Lead',
+        4: 'Overflow Junior'
+    };
+    return names[seniority] || 'Unknown';
+}
+
+function formatShift(start, end) {
+    if (!start || !end) return 'N/A';
+    if (start === '00:00:00' && end === '00:00:00') return '24/7';
+    return `${start.substring(0, 5)} - ${end.substring(0, 5)}`;
+}
+
+function getAgentCapacity(agent) {
+    const multipliers = {
+        0: 0.4, // Junior
+        1: 0.6, // MidLevel
+        2: 0.8, // Senior
+        3: 0.5, // TeamLead
+        4: 0.4  // OverflowJunior
+    };
+    const multiplier = multipliers[agent.seniority] || 0.4;
+    return Math.floor(agent.maxConcurrentChats * multiplier);
+}
+
+function isAgentOnShift(agent) {
+    const now = new Date();
+    const utcHour = now.getUTCHours();
+    const utcMinute = now.getUTCMinutes();
+    const currentTime = utcHour + (utcMinute / 60);
+    
+    if (!agent.shiftStart || !agent.shiftEnd) return false;
+    if (agent.shiftStart === '00:00:00' && agent.shiftEnd === '00:00:00') return true;
+    
+    const start = parseShiftTime(agent.shiftStart);
+    const end = parseShiftTime(agent.shiftEnd);
+    
+    if (start < end) {
+        return currentTime >= start && currentTime < end;
+    } else {
+        // Shift crosses midnight
+        return currentTime >= start || currentTime < end;
+    }
+}
+
+function parseShiftTime(timeString) {
+    const parts = timeString.split(':');
+    return parseInt(parts[0]) + (parseInt(parts[1]) / 60);
 }
 
 // Initialize

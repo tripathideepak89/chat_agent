@@ -185,6 +185,72 @@ app.MapGet("/api/chat/sessions/{id:guid}/poll", async (
     return Results.Ok(new PollResponse("WAIT", null, null));
 });
 
+// Dashboard Endpoints
+app.MapGet("/api/chat/sessions", async (CouchbaseContext ctx, CancellationToken ct) =>
+{
+    var statement = @"
+        SELECT META(d).id, d.*
+        FROM `support`._default._default AS d
+        WHERE META(d).id LIKE 'session::%'
+        ORDER BY d.createdAtUtc DESC
+        LIMIT 50
+    ";
+    
+    var result = await ctx.Cluster.QueryAsync<ChatSession>(statement);
+    var sessions = new List<ChatSession>();
+    
+    await foreach (var row in result.Rows.WithCancellation(ct))
+    {
+        sessions.Add(row);
+    }
+    
+    return Results.Ok(sessions);
+});
+
+app.MapGet("/api/chat/agents", async (CouchbaseContext ctx, CancellationToken ct) =>
+{
+    var statement = @"
+        SELECT META(d).id, d.*
+        FROM `support`._default._default AS d
+        WHERE META(d).id LIKE 'agent::%'
+        ORDER BY d.team, d.seniority DESC
+    ";
+    
+    var result = await ctx.Cluster.QueryAsync<AgentState>(statement);
+    var agents = new List<AgentState>();
+    
+    await foreach (var row in result.Rows.WithCancellation(ct))
+    {
+        agents.Add(row);
+    }
+    
+    return Results.Ok(agents);
+});
+
+app.MapGet("/api/chat/stats", async (CouchbaseContext ctx, CancellationToken ct) =>
+{
+    var statement = @"
+        SELECT 
+            COUNT(*) as totalSessions,
+            SUM(CASE WHEN d.status IN [0, 1] THEN 1 ELSE 0 END) as queuedSessions,
+            SUM(CASE WHEN d.status = 2 THEN 1 ELSE 0 END) as assignedSessions,
+            SUM(CASE WHEN d.status = 2 OR d.pollCount > 0 THEN 1 ELSE 0 END) as activeSessions
+        FROM `support`._default._default AS d
+        WHERE META(d).id LIKE 'session::%'
+    ";
+    
+    var result = await ctx.Cluster.QueryAsync<dynamic>(statement);
+    var stats = await result.Rows.FirstOrDefaultAsync(ct);
+    
+    return Results.Ok(new
+    {
+        totalSessions = stats?.totalSessions ?? 0,
+        queuedSessions = stats?.queuedSessions ?? 0,
+        assignedSessions = stats?.assignedSessions ?? 0,
+        activeSessions = stats?.activeSessions ?? 0
+    });
+});
+
 app.Run();
 
 static DateTimeOffset ConvertToLocal(DateTimeOffset utc, string tzId)
