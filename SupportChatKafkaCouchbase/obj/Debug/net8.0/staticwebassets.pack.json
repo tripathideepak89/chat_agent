@@ -1,0 +1,33 @@
+{
+  "Files": [
+    {
+      "Id": "C:\\Users\\dtrid8\\development\\chat_agent\\SupportChatKafkaCouchbase\\wwwroot\\app.js",
+      "PackagePath": "staticwebassets\\app.js"
+    },
+    {
+      "Id": "C:\\Users\\dtrid8\\development\\chat_agent\\SupportChatKafkaCouchbase\\wwwroot\\index.html",
+      "PackagePath": "staticwebassets\\index.html"
+    },
+    {
+      "Id": "C:\\Users\\dtrid8\\development\\chat_agent\\SupportChatKafkaCouchbase\\wwwroot\\styles.css",
+      "PackagePath": "staticwebassets\\styles.css"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.SupportChatKafkaCouchbase.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.build.SupportChatKafkaCouchbase.props",
+      "PackagePath": "build\\SupportChatKafkaCouchbase.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildMultiTargeting.SupportChatKafkaCouchbase.props",
+      "PackagePath": "buildMultiTargeting\\SupportChatKafkaCouchbase.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildTransitive.SupportChatKafkaCouchbase.props",
+      "PackagePath": "buildTransitive\\SupportChatKafkaCouchbase.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

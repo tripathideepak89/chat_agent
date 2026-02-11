@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SupportChatKafkaCouchbase")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+982bbd264b58223b5541ed8a1a86f92ca4f03dc8")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+dd648ac5eba33c5b90c98f1b5363efce02320d2a")]
 [assembly: System.Reflection.AssemblyProductAttribute("SupportChatKafkaCouchbase")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SupportChatKafkaCouchbase")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

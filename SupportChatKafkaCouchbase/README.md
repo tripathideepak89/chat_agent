@@ -75,6 +75,28 @@ dotnet run
 
 The API will be available at http://localhost:5000 with Swagger UI at http://localhost:5000/swagger
 
+## Web UI
+
+The application includes a modern web interface accessible at http://localhost:5000
+
+### Customer Interface
+- **Start Chat Session**: Customers can request support by entering an optional reference ID
+- **Real-time Status**: View queue position and assignment status
+- **Live Polling**: Automatic polling every 2 seconds to check for agent assignment
+- **Assignment Notification**: Displays assigned agent ID and team when connected
+
+### Admin Dashboard
+- **System Statistics**: View total, active, queued, and assigned sessions
+- **Session Monitoring**: Track all chat sessions in real-time
+- **Agent Status**: Monitor agent availability and workload
+
+### Features
+- 📱 Responsive design - works on desktop and mobile
+- 🎨 Modern gradient UI with smooth animations
+- ⚡ Real-time updates via polling
+- 🔄 Auto-refresh capabilities
+- 📊 Visual status indicators
+
 ## API Endpoints
 
 ### Create Chat Session
